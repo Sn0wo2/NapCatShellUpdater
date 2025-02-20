@@ -1,7 +1,6 @@
 package napcat
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/Sn0wo2/NapCatShellUpdater/flags"
 	"github.com/Sn0wo2/NapCatShellUpdater/helper"
@@ -12,10 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-	"time"
 )
 
 func CheckNapCatUpdate() {
@@ -30,111 +25,18 @@ func CheckNapCatUpdate() {
 }
 
 func ProcessVersionUpdate(ver string) {
-	currentVersion := getCurrentNapCatVersion()
-	if ver == "" || currentVersion == "" {
-		log.Error("NapCatShellUpdater", "Failed to fetch version info", ver, currentVersion)
+	if ver == "" {
 		return
 	}
-	if ver != currentVersion {
-		processAndUpdate(downloadFile(fmt.Sprintf("https://github.com/NapNeko/NapCatQQ/releases/download/%s/NapCat.Shell.zip", ver)))
-	} else {
-		log.Info("NapCatShellUpdater", "NapCat is up to date: ", currentVersion)
-	}
-}
-
-func GetNapCatPanelURLInLogs(dirPath string) (string, string, error) {
-	fileInfo, err := os.Stat(dirPath)
-	if err != nil || !fileInfo.IsDir() {
-		return "", "", fmt.Errorf("invalid directory path: %s", dirPath)
-	}
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read directory: %v", err)
-	}
-	urlTokenRegex := regexp.MustCompile(`(https?://[^\s:/]+:\d+)/webui\?token=([^\s]+)`)
-	var logFiles []struct {
-		Path    string
-		ModTime time.Time
-	}
-	for _, entry := range entries {
-		if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || strings.ToLower(filepath.Ext(entry.Name())) != ".log" {
-			continue
-		}
-
-		fullPath := filepath.Join(dirPath, entry.Name())
-		fileInfo, err := entry.Info()
-		if err != nil {
-			continue
-		}
-
-		logFiles = append(logFiles, struct {
-			Path    string
-			ModTime time.Time
-		}{
-			Path:    fullPath,
-			ModTime: fileInfo.ModTime(),
-		})
-	}
-
-	if len(logFiles) == 0 {
-		return "", "", fmt.Errorf("no log files found in %s", dirPath)
-	}
-
-	sort.Slice(logFiles, func(i, j int) bool {
-		return logFiles[i].ModTime.After(logFiles[j].ModTime)
-	})
-
-	for _, logFile := range logFiles {
-		f, err := os.Open(logFile.Path)
-		if err != nil {
-			continue
-		}
-		defer f.Close()
-
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			matches := urlTokenRegex.FindStringSubmatch(scanner.Text())
-			if len(matches) >= 3 {
-				return matches[1], matches[2], nil
-			}
-		}
-	}
-
-	return "", "", fmt.Errorf("no matching URL found in %s", dirPath)
-}
-
-func processAndUpdate(filename string) {
-	log.Info("NapCatShellUpdater", "Waiting NapCatWinBootMain.exe process to end...")
-	err := <-WaitForAllProcessesEnd(filepath.Join(flags.Config.Path, "NapCatWinBootMain.exe"), true)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Info("NapCatShellUpdater", "Clean target directory...")
-	err = cleanDirectory(flags.Config.Path, []string{"config", "logs", "quickLoginExample.bat", "update.bat", filepath.Base(os.Args[0]), filename})
-	if err != nil {
-		log.RPanic(err)
-	}
-
-	log.Info("NapCatShellUpdater", "Extracting new version...")
-	err = unzipWithExclusion(filename, flags.Config.Path, []string{"quickLoginExample.bat"})
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.Remove(filename)
-	if err != nil {
-		panic(err)
-	}
+	processAndUpdate(downloadFile(fmt.Sprintf("https://github.com/NapNeko/NapCatQQ/releases/download/%s/NapCat.Shell.zip", ver)))
 }
 
 func getCurrentNapCatVersion() (ver string) {
-	packageFile, err := os.ReadFile(filepath.Join(flags.Config.Path, "package.json"))
+	data, err := os.ReadFile(filepath.Join(flags.Config.Path, "package.json"))
 	if err != nil {
-		log.Error("NapCatShellUpdater", "failed to read package.json:", err)
-		return "v0.0.0(Error)"
+		panic(err)
 	}
-	version := gjson.GetBytes(packageFile, "version").String()
+	version := gjson.GetBytes(data, "version").String()
 	if version == "" {
 		version = "0.0.0(Not Found)"
 	}

@@ -1,9 +1,39 @@
 package napcat
 
 import (
+	"github.com/Sn0wo2/NapCatShellUpdater/flags"
+	"github.com/Sn0wo2/NapCatShellUpdater/log"
 	"github.com/shirou/gopsutil/process"
+
+	"os"
+	"path/filepath"
 	"time"
 )
+
+func processAndUpdate(filename string) {
+	log.Info("NapCatShellUpdater", "Waiting NapCatWinBootMain.exe process to end...")
+	err := <-WaitForAllProcessesEnd(filepath.Join(flags.Config.Path, "NapCatWinBootMain.exe"), true)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Info("NapCatShellUpdater", "Clean target directory...")
+	err = cleanDirectory(flags.Config.Path, []string{"config", "logs", "quickLoginExample.bat", "update.bat", filepath.Base(os.Args[0]), filename})
+	if err != nil {
+		log.RPanic(err)
+	}
+
+	log.Info("NapCatShellUpdater", "Extracting new version...")
+	err = unzipWithExclusion(filename, flags.Config.Path, []string{"quickLoginExample.bat"})
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.Remove(filename)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func WaitForProcess(targetPath string) (<-chan *process.Process, <-chan error) {
 	resultChan := make(chan *process.Process)
