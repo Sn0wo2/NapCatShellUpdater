@@ -1,4 +1,6 @@
 # NapCatShellUpdater
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2FNapCatShellUpdater.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2FNapCatShellUpdater?ref=badge_shield)
+
 ###### 方便的更新 `Windows` 平台下的[` NapCat.Shell `](https://github.com/NapNeko/NapCatQQ)
 
 ---
@@ -19,3 +21,7 @@
 ---
 
 - [NapNeko/NapCatQQ](https://github.com/NapNeko/NapCatQQ)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSn0wo2%2FNapCatShellUpdater.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSn0wo2%2FNapCatShellUpdater?ref=badge_large)
